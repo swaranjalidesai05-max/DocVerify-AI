@@ -1,0 +1,17 @@
+﻿
+--- Test 1: license_0001.png ---
+Uploaded. Document ID: 0d6f7062-577f-4087-a793-070c1ea75c4d
+Poll UI -> [completed] Stage: ...
+Total end-to-end time for test 1: 0.39s
+
+--- Test 2: license_0002.png ---
+Uploaded. Document ID: 273ff1a8-95bc-4762-978c-cd6a28f78409
+Poll UI -> [completed] Stage: ...
+Total end-to-end time for test 2: 0.32s
+
+--- Test 3: license_0003.png ---
+Uploaded. Document ID: 38e14dd5-8d95-4e03-9bd5-9fcbaa653c55
+Poll UI -> [completed] Stage: ...
+Total end-to-end time for test 3: 0.36s
+
+Average Time: 0.35s

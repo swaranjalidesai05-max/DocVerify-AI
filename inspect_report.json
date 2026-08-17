@@ -1,0 +1,31 @@
+{
+    "total_images_in_folder": 500,
+    "total_rows_in_csv": 500,
+    "missing_in_csv_count": 0,
+    "missing_in_folder_count": 0,
+    "duplicates_in_csv": 0,
+    "valid_images": 500,
+    "corrupted_images": 0,
+    "image_dimensions": {
+        "1050x660": 500
+    },
+    "image_formats": {
+        "PNG": 500
+    },
+    "csv_columns": [
+        "filename",
+        "state",
+        "license_no",
+        "name",
+        "relation_type",
+        "relative_name",
+        "dob",
+        "blood_group",
+        "organ_donor",
+        "address",
+        "date_of_first_issue",
+        "issue_date",
+        "validity_nt",
+        "validity_tr"
+    ]
+}

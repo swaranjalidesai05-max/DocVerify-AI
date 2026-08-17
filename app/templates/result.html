@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% block title %}Verification Result — DocVerify AI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Verification Result</h1>
+        <p class="page-subtitle" id="result-subtitle">Loading result...</p>
+    </div>
+    <div class="header-actions">
+        <a href="/upload" class="btn-outline">New Verification</a>
+        <a id="download-btn" href="#" class="btn-primary" style="display:none" target="_blank">⬇ Download PDF</a>
+    </div>
+</div>
+
+<div id="loading-state" class="loading-card">
+    <div class="loading-spinner-lg"></div>
+    <p id="processing-stage-text" style="font-weight: 600; font-size: 1.1rem; margin-top: 1rem;">Loading verification
+        result...</p>
+</div>
+
+<div id="result-content" style="display:none">
+    <!-- Classification Hero -->
+    <div class="classification-hero" id="classification-box"
+        style="margin-bottom: 2rem; padding: 2rem; background: linear-gradient(135deg, #f0f4ff, #e0e8ff); border-radius: 12px; text-align: center; border: 1px solid #4361ee;">
+        <p
+            style="font-size: 0.9rem; font-weight: 600; color: #4361ee; letter-spacing: 1px; margin-bottom: 0.5rem; text-transform: uppercase;">
+            Document Type Detected</p>
+        <h2 id="detected-doc-type" style="font-size: 2.2rem; color: #1a1a2e; margin-bottom: 0.5rem; font-weight: 700;">—
+        </h2>
+        <p style="font-size: 0.95rem; color: #4a4a6a; font-weight: 500;">
+            AI Classification Confidence: <span id="detected-confidence"
+                style="font-weight: 700; color: #1a1a2e;">—</span>
+        </p>
+    </div>
+
+    <!-- Score Hero -->
+    <div class="score-hero">
+        <div class="score-circle-wrapper">
+            <svg viewBox="0 0 120 120" class="score-ring">
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#1a1a3e" stroke-width="10" />
+                <circle id="score-arc" cx="60" cy="60" r="52" fill="none" stroke="#4361ee" stroke-width="10"
+                    stroke-dasharray="326.7" stroke-dashoffset="326.7" stroke-linecap="round"
+                    transform="rotate(-90 60 60)" />
+            </svg>
+            <div class="score-center">
+                <span class="score-number" id="score-display">—</span>
+                <span class="score-pct">%</span>
+            </div>
+        </div>
+        <div class="score-meta">
+            <h2 class="verdict-display" id="verdict-display">—</h2>
+            <p class="score-caption">AI-Assisted Authenticity Score</p>
+            <div id="demo-badge" class="demo-indicator" style="display:none">🔬 DEMO / AI Simulation</div>
+            <p class="disclaimer-small">⚠️ Not an official government authentication result</p>
+        </div>
+    </div>
+
+    <!-- Component Score Cards -->
+    <div class="components-grid" id="components-grid"></div>
+
+    <!-- Extracted Fields -->
+    <div class="section-card" id="fields-section" style="display:none">
+        <div class="section-header">
+            <h2 class="section-title">Extracted Information</h2>
+            <span class="badge" id="doc-type-badge">—</span>
+        </div>
+        <div id="fields-grid" class="fields-grid"></div>
+    </div>
+
+    <!-- Anomalies -->
+    <div class="section-card" id="anomalies-section">
+        <div class="section-header">
+            <h2 class="section-title">🔍 Detected Anomalies</h2>
+            <span id="anomaly-count" class="badge badge-warning">0 found</span>
+        </div>
+        <div id="anomalies-list"></div>
+    </div>
+</div>
+
+<script>
+    const VERIFICATION_ID = "{{ verification_id }}";
+
+    const COMPONENT_LABELS = {
+        ocr: { label: 'OCR Extraction', icon: '📝' },
+        classification: { label: 'Classification', icon: '🏷' },
+        forgery: { label: 'Forgery Analysis', icon: '🧪' },
+        template: { label: 'Template Match', icon: '📐' },
+        qr: { label: 'QR Validation', icon: '📱' },
+        face: { label: 'Face Verify', icon: '👤' },
+    };
+
+    async function loadResult() {
+        try {
+            const res = await fetch(`/api/verification/${VERIFICATION_ID}`);
+            const data = await res.json();
+            if (!res.ok) { document.getElementById('result-subtitle').textContent = 'Result not found'; return; }
+
+            if (data.status !== "completed" && data.status !== "failed") {
+                document.getElementById('processing-stage-text').textContent = data.processing_stage || "Processing algorithm...";
+                setTimeout(loadResult, 1000);
+                return;
+            }
+
+            if (data.status === "failed") {
+                document.getElementById('processing-stage-text').textContent = data.processing_stage || "Verification Failed";
+                document.querySelector('.loading-spinner-lg').style.display = 'none';
+                return;
+            }
+
+            renderResult(data);
+        } catch (e) {
+            document.getElementById('result-subtitle').textContent = 'Error loading result';
+        }
+    }
+
+    function renderResult(data) {
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('result-content').style.display = 'block';
+
+        const score = data.authenticity_score || 0;
+        const verdict = data.verdict || 'UNKNOWN';
+
+        document.getElementById('result-subtitle').textContent = `Verification #${data.verification_id} · ${data.doc_type ? data.doc_type.toUpperCase() : 'Unknown'}`;
+        document.getElementById('score-display').textContent = Math.round(score);
+
+        const classBox = document.getElementById('classification-box');
+        const docClass = data.document_classification || {};
+
+        let icon = "📄";
+        if (docClass.document_code === "AADHAAR") icon = "🪪";
+        if (docClass.document_code === "PAN") icon = "💳";
+        if (docClass.document_code === "VOTER_ID") icon = "🗳️";
+        if (docClass.document_code === "DRIVING_LICENSE") icon = "🚗";
+        if (docClass.document_code === "PASSPORT") icon = "🛂";
+        if (docClass.document_code === "UNKNOWN") icon = "⚠️";
+
+        document.getElementById('detected-doc-type').textContent = `${icon} ${docClass.document_type || data.doc_type || 'Unknown'}`;
+
+        if (docClass.confidence) {
+            document.getElementById('detected-confidence').textContent = docClass.confidence.toFixed(1) + '%';
+        } else {
+            document.getElementById('detected-confidence').textContent = '—';
+        }
+
+        // Color coding the classification box
+        if (docClass.document_code === "UNKNOWN") {
+            classBox.style.background = "linear-gradient(135deg, #fff5f5, #ffe0e0)";
+            classBox.style.border = "1px solid #e63946";
+        } else {
+            classBox.style.background = "linear-gradient(135deg, #f0f4ff, #e0e8ff)";
+            classBox.style.border = "1px solid #4361ee";
+        }
+
+        const verdictEl = document.getElementById('verdict-display');
+        verdictEl.textContent = verdict;
+        verdictEl.className = 'verdict-display verdict-color-' + verdict.toLowerCase().replace(/ /g, '-');
+
+        // Animate score ring
+        const circumference = 326.7;
+        const arc = document.getElementById('score-arc');
+        const offset = circumference - (score / 100) * circumference;
+        const color = score >= 90 ? '#2a9d8f' : score >= 75 ? '#4361ee' : score >= 50 ? '#f4a261' : '#e63946';
+        arc.style.stroke = color;
+        setTimeout(() => { arc.style.strokeDashoffset = offset; arc.style.transition = 'stroke-dashoffset 1.2s ease, stroke 0.3s'; }, 100);
+
+        if (data.is_demo) document.getElementById('demo-badge').style.display = 'inline-block';
+
+        if (data.has_report) {
+            const dlBtn = document.getElementById('download-btn');
+            dlBtn.href = `/api/reports/${VERIFICATION_ID}`;
+            dlBtn.style.display = 'inline-flex';
+        }
+
+        // Component scores
+        const comps = (data.result && data.result.component_scores) || {};
+        const grid = document.getElementById('components-grid');
+        for (const [key, meta] of Object.entries(COMPONENT_LABELS)) {
+            const val = comps[key];
+            const card = document.createElement('div');
+            card.className = 'component-card';
+            const displayVal = val !== null && val !== undefined ? Math.round(val) + '%' : 'N/A';
+            const barWidth = val !== null && val !== undefined ? val : 0;
+            const cls = val === null ? 'neutral' : val >= 75 ? 'good' : val >= 50 ? 'warn' : 'bad';
+            card.innerHTML = `
+      <div class="comp-header">
+        <span class="comp-icon">${meta.icon}</span>
+        <span class="comp-label">${meta.label}</span>
+      </div>
+      <div class="comp-score ${cls}">${displayVal}</div>
+      <div class="comp-bar"><div class="comp-bar-fill ${cls}" style="width:${barWidth}%"></div></div>
+    `;
+            grid.appendChild(card);
+        }
+
+        // Extracted fields
+        const fields = (data.result && data.result.extracted_fields) || {};
+        if (Object.keys(fields).length > 0) {
+            document.getElementById('fields-section').style.display = 'block';
+            document.getElementById('doc-type-badge').textContent = (data.result.doc_type_detected || 'unknown').toUpperCase();
+            const fg = document.getElementById('fields-grid');
+            for (const [k, v] of Object.entries(fields)) {
+                if (!v) continue;
+                const item = document.createElement('div');
+                item.className = 'field-item';
+                item.innerHTML = `<span class="field-label">${k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</span><span class="field-value">${v}</span>`;
+                fg.appendChild(item);
+            }
+        }
+
+        // Anomalies
+        const anomalies = data.anomalies || [];
+        document.getElementById('anomaly-count').textContent = `${anomalies.length} found`;
+        const al = document.getElementById('anomalies-list');
+        if (anomalies.length === 0) {
+            al.innerHTML = '<div class="empty-anomaly"><p>✅ No significant anomalies detected</p></div>';
+        } else {
+            anomalies.forEach(a => {
+                const sevClass = { HIGH: 'sev-high', MEDIUM: 'sev-medium', LOW: 'sev-low' }[a.severity] || 'sev-low';
+                const item = document.createElement('div');
+                item.className = `anomaly-item ${sevClass}`;
+                item.innerHTML = `
+        <div class="anomaly-header">
+          <span class="anomaly-type">${a.anomaly_type.replace(/_/g, ' ')}</span>
+          <span class="anomaly-sev sev-badge-${a.severity.toLowerCase()}">${a.severity}</span>
+          <span class="anomaly-conf">${Math.round(a.confidence * 100)}% confidence</span>
+        </div>
+        <p class="anomaly-explanation">${a.explanation}</p>
+      `;
+                al.appendChild(item);
+            });
+        }
+    }
+
+    loadResult();
+</script>
+{% endblock %}

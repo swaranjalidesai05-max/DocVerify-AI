@@ -1,0 +1,22 @@
+﻿[ML] Successfully loaded Document Classifier model.
+Starting test for document C:\Users\Swaranjali Desai\Downloads\uploads\temp_bench_2b222715-dee7-4cfd-9d94-0af9774b7fbc.png
+[VERIFY] Preprocessing started
+[VERIFY] Preprocessing completed: 0.29s
+[VERIFY] Document classification & OCR prep started
+[VERIFY] Document classification & OCR prep completed: 2.58s
+[VERIFY] OCR started
+[VERIFY] OCR completed: 0.00s
+[VERIFY] Forgery detection started
+[VERIFY] Forgery detection completed: 0.29s
+[VERIFY] Template matching started
+[VERIFY] Template matching completed: 0.00s
+[VERIFY] QR Validation started
+[VERIFY] QR Validation completed: 0.05s
+[VERIFY] Face verification started
+[VERIFY] Face verification completed: 0.00s
+[VERIFY] Authenticity scoring started
+[VERIFY] Authenticity scoring completed: 0.00s
+[VERIFY] PDF Generation started
+[VERIFY] PDF Generation completed: 0.15s
+[VERIFY] Total Verification Time: 3.36s
+Success! Final Verdict: LIKELY AUTHENTIC

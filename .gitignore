@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Environment / secrets
+.env
+.env.*
+
+# User-uploaded temporary data
+uploads/
+reports/
+*.db
+*.sqlite
+*.sqlite3
+
+# ML datasets
+dataset/
+
+# Training outputs / checkpoints
+*.pt
+*.pth
+*.onnx
+checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

@@ -1,0 +1,17 @@
+﻿
+--- Test 1: license_0001.png ---
+Uploaded. Document ID: bdfd7790-0247-4da5-949f-9931a937d503
+Poll UI -> [completed] Verdict: LIKELY AUTHENTIC | Stage: ...
+Total end-to-end time for test 1: 0.36s
+
+--- Test 2: license_0002.png ---
+Uploaded. Document ID: 2411e3dd-530f-44eb-a1b7-8c345c4a649c
+Poll UI -> [completed] Verdict: LIKELY AUTHENTIC | Stage: ...
+Total end-to-end time for test 2: 0.38s
+
+--- Test 3: license_0003.png ---
+Uploaded. Document ID: bebf7fd3-607a-40c7-94a5-fa2622d3119b
+Poll UI -> [completed] Verdict: LIKELY AUTHENTIC | Stage: ...
+Total end-to-end time for test 3: 0.36s
+
+Average Time: 0.37s

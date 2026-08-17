@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — DocVerify AI{% endblock %}
+
+{% block content %}
+<div class="page-header text-center" style="padding: 4rem 1rem;">
+    <h1 class="page-title" style="font-size: 2.5rem; margin-bottom: 1rem;">Intelligent Government Document
+        Authentication
+        {% if demo_mode %}<span class="demo-tag" style="vertical-align: middle;">DEMO MODE</span>{% endif %}
+    </h1>
+    <p class="page-subtitle" style="font-size: 1.25rem; max-width: 800px; margin: 0 auto 2rem; color: #a1a1aa;">
+        Upload a document and analyze its authenticity using AI-powered OCR, forensic analysis, template matching, QR
+        validation, and optional face verification.
+    </p>
+    <div style="display: flex; gap: 1rem; justify-content: center;">
+        <a href="/upload" class="btn-primary" style="font-size: 1.1rem; padding: 0.75rem 2rem;">
+            Verify a Document
+        </a>
+        <a href="#how-it-works" class="btn-outline" style="font-size: 1.1rem; padding: 0.75rem 2rem;">
+            How It Works
+        </a>
+    </div>
+
+    <div
+        style="margin-top: 2rem; display: inline-flex; align-items: center; gap: 0.75rem; background-color: #f0fdfa; border: 1px solid #cce5ff; border-left: 4px solid #14b8a6; padding: 0.75rem 1.5rem; border-radius: 4px; text-align: left;">
+        <span style="font-size: 1.5rem;">🔒</span>
+        <div>
+            <strong style="display: block; color: #111827; margin-bottom: 2px;">Privacy First</strong>
+            <span style="font-size: 0.9rem; color: #4b5563;">Your uploaded document is processed temporarily and is not
+                stored permanently.</span>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Supported Documents -->
+<div class="section-card">
+    <div class="section-header">
+        <h2 class="section-title">Supported Documents</h2>
+    </div>
+    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+        <div class="stat-card">
+            <div class="stat-icon icon-blue">🪪</div>
+            <div class="stat-info">
+                <p class="stat-label" style="font-weight:700; color:#1a1a2e;">Aadhaar Card</p>
+                <p class="stat-value text-sm" style="font-size: 0.85rem; color:#4a4a6a;">Identity document analysis</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon icon-blue">💳</div>
+            <div class="stat-info">
+                <p class="stat-label" style="font-weight:700; color:#1a1a2e;">PAN Card</p>
+                <p class="stat-value text-sm" style="font-size: 0.85rem; color:#4a4a6a;">Tax identity document analysis
+                </p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon icon-blue">🗳️</div>
+            <div class="stat-info">
+                <p class="stat-label" style="font-weight:700; color:#1a1a2e;">Voter ID</p>
+                <p class="stat-value text-sm" style="font-size: 0.85rem; color:#4a4a6a;">Electoral identity document
+                    analysis</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon icon-blue">🚗</div>
+            <div class="stat-info">
+                <p class="stat-label" style="font-weight:700; color:#1a1a2e;">Driving Licence</p>
+                <p class="stat-value text-sm" style="font-size: 0.85rem; color:#4a4a6a;">Driving identity document
+                    analysis</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon icon-blue">🛂</div>
+            <div class="stat-info">
+                <p class="stat-label" style="font-weight:700; color:#1a1a2e;">Passport</p>
+                <p class="stat-value text-sm" style="font-size: 0.85rem; color:#4a4a6a;">International travel identity
+                    document analysis</p>
+            </div>
+        </div>
+    </div>
+    <div style="text-align: center; margin-top: 1rem;">
+        <p class="text-muted" style="font-style: italic;">More document types can be added in future.</p>
+    </div>
+</div>
+
+
+{% endblock %}

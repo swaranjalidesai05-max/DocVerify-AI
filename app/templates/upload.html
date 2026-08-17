@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Upload Document — DocVerify AI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Upload Document</h1>
+        <p class="page-subtitle">Upload a government identity document for AI-powered verification</p>
+    </div>
+</div>
+
+<div class="upload-container">
+    <div class="upload-card">
+        <div id="drop-zone" class="drop-zone" ondrop="handleDrop(event)" ondragover="handleDragOver(event)"
+            ondragleave="handleDragLeave(event)" onclick="document.getElementById('file-input').click()">
+            <div class="drop-icon">📄</div>
+            <h3 class="drop-title">Drag & drop your document here</h3>
+            <p class="drop-subtitle">or click to browse</p>
+            <p class="drop-info">Supported: JPG, JPEG, PNG, PDF · Max: {{ max_size_mb }} MB</p>
+            <input type="file" id="file-input" accept=".jpg,.jpeg,.png,.pdf" style="display:none"
+                onchange="handleFileSelect(event)">
+        </div>
+
+        <div id="file-preview" class="file-preview" style="display:none">
+            <div class="file-info">
+                <span class="file-icon">📎</span>
+                <div>
+                    <p id="file-name" class="file-name"></p>
+                    <p id="file-size" class="file-size"></p>
+                </div>
+                <button class="btn-remove" onclick="clearFile()">✕</button>
+            </div>
+        </div>
+
+        <div id="alert-box" class="alert" style="display:none"></div>
+
+        <div class="upload-info-box"
+            style="background-color: #f0fdfa; border: 1px solid #cce5ff; border-left: 4px solid #14b8a6; padding: 1rem; border-radius: 4px;">
+            <p>🔒 <strong>Privacy First:</strong> Your uploaded document is processed temporarily for verification and
+                is not stored permanently. Verification history is not maintained. <br><br>⚠️ Do not upload documents
+                belonging to another person without their permission.</p>
+        </div>
+
+        <div id="progress-area" style="display:none">
+            <div class="progress-bar-wrapper">
+                <div id="progress-bar" class="progress-bar-fill" style="width:0%"></div>
+            </div>
+            <p id="progress-text" class="progress-text">Uploading...</p>
+        </div>
+
+        <button id="upload-btn" class="btn-primary btn-full" onclick="startUploadAndVerify()" disabled>
+            <span id="upload-btn-text">🔍 Upload & Verify</span>
+            <span id="upload-spinner" class="spinner" style="display:none"></span>
+        </button>
+    </div>
+
+    <div class="upload-sidebar">
+        <div class="sidebar-card">
+            <h3>Supported Documents</h3>
+            <ul class="doc-list">
+                <li>🪪 Aadhaar Card</li>
+                <li>💳 PAN Card</li>
+                <li>🛂 Passport</li>
+                <li>🚗 Driving License</li>
+            </ul>
+        </div>
+        <div class="sidebar-card">
+            <h3>Verification Checks</h3>
+            <ul class="check-list">
+                <li>✓ OCR Text Extraction</li>
+                <li>✓ Document Classification</li>
+                <li>✓ Forgery Analysis</li>
+                <li>✓ Template Matching</li>
+                <li>✓ QR Code Validation</li>
+                <li>✓ Authenticity Scoring</li>
+                <li>✓ PDF Report Generation</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Modal removed for backend polling -->
+
+<script>
+    let selectedFile = null;
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        document.getElementById('drop-zone').classList.add('drag-over');
+    }
+    function handleDragLeave(e) {
+        document.getElementById('drop-zone').classList.remove('drag-over');
+    }
+    function handleDrop(e) {
+        e.preventDefault();
+        document.getElementById('drop-zone').classList.remove('drag-over');
+        handleFileSelect({ target: { files: e.dataTransfer.files } });
+    }
+    function handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        selectedFile = file;
+        document.getElementById('file-name').textContent = file.name;
+        document.getElementById('file-size').textContent = (file.size / 1024).toFixed(1) + ' KB';
+        document.getElementById('drop-zone').style.display = 'none';
+        document.getElementById('file-preview').style.display = 'flex';
+        document.getElementById('upload-btn').disabled = false;
+    }
+    function clearFile() {
+        selectedFile = null;
+        document.getElementById('file-input').value = '';
+        document.getElementById('drop-zone').style.display = 'flex';
+        document.getElementById('file-preview').style.display = 'none';
+        document.getElementById('upload-btn').disabled = true;
+    }
+
+    // Deprecated step animation logic
+
+    async function startUploadAndVerify() {
+        if (!selectedFile) return;
+
+        const fd = new FormData();
+        fd.append('file', selectedFile);
+
+        let docId;
+        try {
+            document.getElementById('upload-btn').disabled = true;
+            document.getElementById('upload-btn-text').textContent = 'Uploading...';
+
+            const upRes = await fetch('/api/documents/upload', { method: 'POST', body: fd });
+            const upJson = await upRes.json();
+            if (!upRes.ok) {
+                showAlert(upJson.detail || 'Upload failed', 'error');
+                document.getElementById('upload-btn').disabled = false;
+                document.getElementById('upload-btn-text').textContent = '🔍 Upload & Verify';
+                return;
+            }
+            docId = upJson.document_id;
+
+            const verRes = await fetch(`/api/verification/start?doc_id=${docId}`, { method: 'POST' });
+            const verJson = await verRes.json();
+
+            if (verRes.ok) {
+                window.location.href = `/verification/${verJson.verification_id}`;
+            } else {
+                showAlert(verJson.detail || 'Verification failed', 'error');
+                document.getElementById('upload-btn').disabled = false;
+                document.getElementById('upload-btn-text').textContent = '🔍 Upload & Verify';
+            }
+        } catch (err) {
+            showAlert('An error occurred: ' + err.message, 'error');
+            document.getElementById('upload-btn').disabled = false;
+            document.getElementById('upload-btn-text').textContent = '🔍 Upload & Verify';
+        }
+    }
+</script>
+{% endblock %}
