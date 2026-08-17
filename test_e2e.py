@@ -3,7 +3,7 @@ import time
 import os
 import sys
 
-BASE_URL = "http://127.0.0.1:8010"
+BASE_URL = "http://127.0.0.1:8012"
 
 def run_test(img_name, index):
     image_path = os.path.join(r"C:\Users\Swaranjali Desai\Downloads\Doc Verify AI\dataset\driving_license\images", img_name)

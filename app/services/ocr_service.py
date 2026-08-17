@@ -34,8 +34,9 @@ class OCRService:
         raw_text = ""
         confidence = 0.0
 
-        if reader and not settings.DEMO_MODE:
+        if reader:
             try:
+                print("[OCR] Extraction started")
                 results = reader.readtext(image_path, detail=1, paragraph=False)
                 texts = []
                 confs = []
@@ -44,19 +45,23 @@ class OCRService:
                     confs.append(conf)
                 raw_text = "\n".join(texts)
                 confidence = sum(confs) / len(confs) if confs else 0.0
+                
+                print("[OCR] Extraction completed")
+                print(f"[OCR] Number of text regions detected: {len(results)}")
             except Exception as e:
-                raw_text = f"[OCR Error: {e}]"
+                print(f"[OCR Error] {e}")
+                raw_text = ""
                 confidence = 0.0
         else:
-            # Demo fallback
-            raw_text = self._get_demo_text(doc_type)
-            confidence = 0.85
+            print("[OCR Warning] EasyOCR reader not initialized")
+            raw_text = ""
+            confidence = 0.0
 
         fields = self._extract_fields(raw_text, doc_type)
         detected_type = doc_type or self._detect_type_from_text(raw_text)
 
         return {
-            "document_type": getattr(doc_type, 'display_name', detected_type),
+            "document_type": getattr(doc_type, 'display_name', detected_type) if hasattr(doc_type, 'display_name') else (DOCUMENT_CONFIGS.get(detected_type, {}).get("display_name", detected_type) if detected_type in DOCUMENT_CONFIGS else detected_type),
             "document_code": detected_type,
             "fields": fields,
             "raw_text": raw_text[:2000],  # Limit stored text
@@ -65,6 +70,11 @@ class OCRService:
 
     def _extract_fields(self, text: str, doc_type: Optional[str]) -> dict:
         """Regex-based field extraction from raw OCR text dynamically based on config."""
+        if doc_type == "DRIVING_LICENSE":
+            res = self._extract_driving_license_fields(text)
+            print("[OCR] Field extraction completed")
+            return res
+
         fields = {}
         expected = []
         if doc_type and doc_type in DOCUMENT_CONFIGS:
@@ -80,7 +90,7 @@ class OCRService:
             
         if "date_of_birth" in expected:
             dob = self._extract_dob(text)
-            fields["dob"] = dob if dob else "Not detected"
+            fields["date_of_birth"] = dob if dob else "Not detected"
             
         if "gender" in expected:
             g = self._extract_gender(text)
@@ -106,6 +116,22 @@ class OCRService:
             dl = self._extract_dl(text)
             fields["dl_number"] = dl if dl else "Not detected"
             
+        if "issue_date" in expected:
+            issue = self._extract_issue_date(text)
+            fields["issue_date"] = issue if issue else "Not detected"
+            
+        if "validity_nt" in expected:
+            val_nt = self._extract_validity_nt(text)
+            fields["validity_nt"] = val_nt if val_nt else "Not detected"
+            
+        if "validity_tr" in expected:
+            val_tr = self._extract_validity_tr(text)
+            fields["validity_tr"] = val_tr if val_tr else "Not detected"
+            
+        if "blood_group" in expected:
+            bg = self._extract_blood_group(text)
+            fields["blood_group"] = bg if bg else "Not detected"
+            
         if "epic_number" in expected:
             epic = self._extract_epic(text)
             fields["epic_number"] = epic if epic else "Not detected"
@@ -122,6 +148,107 @@ class OCRService:
             val = self._extract_validity(text)
             fields["validity"] = val if val else "Not detected"
 
+        return fields
+
+    def _extract_driving_license_fields(self, text: str) -> dict:
+        import re
+        from datetime import datetime
+        lines = [line.strip() for line in text.split("\n")]
+        fields = {
+            "name": "Not detected",
+            "date_of_birth": "Not detected",
+            "dl_number": "Not detected",
+            "issue_date": "Not detected",
+            "validity_nt": "Not detected",
+            "validity_tr": "Not detected",
+            "address": "Not detected",
+            "blood_group": "Not detected",
+            "relative_name": "Not detected"
+        }
+        
+        # 1. DL Number Extraction
+        for line in lines:
+            m = re.search(r"\b([A-Z]{2}[0-9IOo]{2}\s*\d{11})\b", line, re.IGNORECASE)
+            if m:
+                # Normalize typical OCR confusion: letter O -> 0 in regional code
+                raw_dl = m.group(1)
+                # Keep it as is or fix common misread
+                fields["dl_number"] = raw_dl
+                break
+                
+        # 2. Date Extraction (DOB, Issue Date, Validity NT, Validity TR)
+        all_dates = []
+        found_matches = re.findall(r"\b(\d{2}[/\-\.]\d{2}[/\-\.]\d{4})\b", text)
+        for date_str in found_matches:
+            normalized_str = date_str.replace("/", "-").replace(".", "-")
+            try:
+                dt = datetime.strptime(normalized_str, "%d-%m-%Y")
+                all_dates.append((dt, date_str))
+            except ValueError:
+                pass
+                
+        # Remove duplicates
+        unique_dates = []
+        seen = set()
+        for dt, orig in all_dates:
+            if dt not in seen:
+                seen.add(dt)
+                unique_dates.append((dt, orig))
+                
+        # Sort chronologically
+        unique_dates.sort(key=lambda x: x[0])
+        
+        num_dates = len(unique_dates)
+        if num_dates > 0:
+            fields["date_of_birth"] = unique_dates[0][1]
+            
+        if num_dates >= 2:
+            fields["validity_tr"] = unique_dates[-1][1]
+            
+        if num_dates >= 3:
+            fields["validity_nt"] = unique_dates[-2][1]
+            
+        if num_dates == 2:
+            fields["issue_date"] = unique_dates[1][1]
+        elif num_dates == 3:
+            fields["issue_date"] = unique_dates[1][1]
+            fields["validity_nt"] = unique_dates[2][1]
+        elif num_dates == 4:
+            fields["issue_date"] = unique_dates[1][1]
+        elif num_dates >= 5:
+            fields["issue_date"] = unique_dates[2][1]
+            
+        # 3. Name Extraction
+        for idx, line in enumerate(lines):
+            if line.lower() == "name":
+                if idx + 2 < len(lines):
+                    fields["name"] = lines[idx + 2]
+                elif idx + 1 < len(lines):
+                    fields["name"] = lines[idx + 1]
+                break
+                
+        # 4. Relative Name Extraction
+        for idx, line in enumerate(lines):
+            if any(r in line.lower() for r in ["son of", "daughter of", "wife of", "husband of", "father of"]):
+                if idx + 2 < len(lines):
+                    fields["relative_name"] = lines[idx + 2]
+                elif idx + 1 < len(lines):
+                    fields["relative_name"] = lines[idx + 1]
+                break
+                
+        # 5. Address Extraction (any line containing a 6-digit number)
+        for line in lines:
+            if re.search(r"\b\d{6}\b", line):
+                fields["address"] = line
+                break
+                
+        # 6. Blood Group Extraction
+        for line in lines:
+            m = re.match(r"^(A|B|AB|O)[\+\-]$", line, re.IGNORECASE)
+            if m:
+                fields["blood_group"] = line.upper()
+                break
+                
         return fields
 
     def _extract_name(self, text: str) -> Optional[str]:
@@ -196,14 +323,44 @@ class OCRService:
                 return doc_code
         return "UNKNOWN"
 
+    def _extract_issue_date(self, text: str) -> Optional[str]:
+        m = re.search(r"(?:Issue Date|Date of First Issue|Date of Issue|DOI)[:\s]*(\d{2}[/\-\.]\d{2}[/\-\.]\d{4})", text, re.IGNORECASE)
+        return m.group(1) if m else None
+
+    def _extract_validity_nt(self, text: str) -> Optional[str]:
+        m = re.search(r"(?:Validity\s+NT|NT|Non[- ]Transport|NT\b)[:\s]*(\d{2}[/\-\.]\d{2}[/\-\.]\d{4})", text, re.IGNORECASE)
+        return m.group(1) if m else None
+
+    def _extract_validity_tr(self, text: str) -> Optional[str]:
+        m = re.search(r"(?:Validity\s+TR|TR|Transport|\bTR\b)[:\s]*(\d{2}[/\-\.]\d{2}[/\-\.]\d{4})", text, re.IGNORECASE)
+        return m.group(1) if m else None
+
+    def _extract_blood_group(self, text: str) -> Optional[str]:
+        m = re.search(r"(?:Blood Group|BG)[:\s]*([ABO]{1,2}[\+\-])", text, re.IGNORECASE)
+        return m.group(1) if m else None
+
     def _get_demo_text(self, doc_type: Optional[str]) -> str:
         demos = {
             "aadhaar": "Government of India\nAadhaar\nUnique Identification Authority of India\nName: DEMO USER\nDOB: 01/01/1990\nMale\n1234 5678 9012\nAddress: 123 Demo Street, Mumbai, Maharashtra - 400001",
             "pan": "Income Tax Department\nPermanent Account Number\nName: DEMO USER\nFather: DEMO FATHER\nDOB: 01/01/1990\nDEMOX1234D",
             "passport": "Republic of India\nPassport\nPassport No: Z1234567\nName: DEMO USER\nNationality: Indian\nDOB: 01/01/1990\nExpiry: 01/01/2030",
-            "dl": "Government of India\nDriving Licence\nName: DEMO USER\nDL No: MH-01-20100012345\nDOB: 01/01/1990\nValid: 01/01/2030",
+            "dl": "Government of India\nDriving Licence\nName: DEMO USER\nDOB: 01/01/1990\nLicence Number: MH01 20100012345\nIssue Date: 12-10-2012\nValidity NT: 11-10-2032\nValidity TR: 11-10-2032\nAddress: 123 Demo Street, Mumbai, Maharashtra - 400001\nBlood Group: O+",
         }
-        return demos.get(doc_type, demos["aadhaar"])
+        if not doc_type:
+            return demos["aadhaar"]
+        doc_type_lower = doc_type.lower()
+        if "driving" in doc_type_lower or "license" in doc_type_lower or "licence" in doc_type_lower or doc_type_lower == "dl":
+            key = "dl"
+        elif "aadhaar" in doc_type_lower:
+            key = "aadhaar"
+        elif "pan" in doc_type_lower:
+            key = "pan"
+        elif "passport" in doc_type_lower:
+            key = "passport"
+        else:
+            key = doc_type_lower
+            
+        return demos.get(key, demos["aadhaar"])
 
 
 ocr_service = OCRService()

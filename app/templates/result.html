@@ -203,7 +203,21 @@
                 if (!v) continue;
                 const item = document.createElement('div');
                 item.className = 'field-item';
-                item.innerHTML = `<span class="field-label">${k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</span><span class="field-value">${v}</span>`;
+
+                let label = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                if (k === 'validity_nt') label = 'Validity (NT)';
+                if (k === 'validity_tr') label = 'Validity (TR)';
+                if (k === 'dob' || k === 'date_of_birth') label = 'Date of Birth';
+                if (k === 'dl_number' || k === 'licence_number') label = 'Licence Number';
+                if (k === 'aadhaar_number') label = 'Aadhaar Number';
+                if (k === 'pan_number') label = 'PAN Number';
+                if (k === 'epic_number') label = 'EPIC Number';
+                if (k === 'passport_number') label = 'Passport Number';
+                if (k === 'blood_group') label = 'Blood Group';
+                if (k === 'issue_date') label = 'Issue Date';
+                if (k === 'relative_name') label = 'Relative Name';
+
+                item.innerHTML = `<div class="field-label">${label}</div><div class="field-value">${v}</div>`;
                 fg.appendChild(item);
             }
         }

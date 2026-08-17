@@ -69,7 +69,7 @@ DOCUMENT_CONFIGS = {
             r"\b[A-Z]{2}-?\d{2}[A-Z\d]{6,14}\b",  # DL number
         ],
         "expected_fields": [
-            "name", "date_of_birth", "dl_number", "address", "issue_date", "validity", "vehicle_class"
+            "name", "date_of_birth", "dl_number", "issue_date", "validity_nt", "validity_tr", "address", "blood_group", "relative_name"
         ],
         "template_dir": "models/templates/driving_license",
         "features": {

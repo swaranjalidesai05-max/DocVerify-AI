@@ -77,9 +77,16 @@ class VerificationPipeline:
 
             detected_type = classification_result.get("document_code", "UNKNOWN")
             v["document_code"] = detected_type
+            v["doc_type"] = detected_type
             v["document_type"] = classification_result.get("document_type", "Unknown / Unsupported")
             v["classification_confidence"] = classification_result.get("confidence")
             v["classification_method"] = classification_result.get("classification_method")
+            v["document_classification"] = {
+                "document_type": classification_result.get("document_type", "Unknown / Unsupported"),
+                "document_code": detected_type,
+                "confidence": classification_result.get("confidence"),
+                "method": classification_result.get("classification_method"),
+            }
 
             # Early Abort if unsupported
             if classification_result.get("status") == "UNSUPPORTED":
@@ -169,7 +176,7 @@ class VerificationPipeline:
                 "extracted_fields": masked_fields,
                 "doc_type_detected": detected_type,
                 "classification_confidence": classification_result.get("confidence"),
-                "classification_method": classification_result.get("method"),
+                "classification_method": classification_result.get("classification_method"),
                 "forgery_score": component_scores.get("forgery"),
                 "tampering_detected": forgery_result.get("tampering_detected", False),
                 "template_score": component_scores.get("template"),

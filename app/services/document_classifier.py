@@ -28,7 +28,7 @@ class DocumentClassifier:
     def _load_model(self):
         try:
             root_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-            model_path = os.path.join(root_dir, 'training', 'models', 'driving_license_classifier.pth')
+            model_path = os.path.join(root_dir, 'models', 'trained', 'driving_license_classifier.pth')
             if os.path.exists(model_path):
                 self.model = models.efficientnet_b0(weights=None)
                 num_ftrs = self.model.classifier[1].in_features
